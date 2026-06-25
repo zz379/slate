@@ -13,3 +13,9 @@ Slate.xcodeproj/xcuserdata/jigish.xcuserdatad/
 # don't version xcode artifacts
 *.xcuserdatad
 tmp
+
+# third-party frameworks (installed via Homebrew)
+Sparkle.framework/
+
+# Xcode build artifacts
+DerivedData/
