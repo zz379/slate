@@ -33,6 +33,7 @@
 #import "RunningApplications.h"
 #import "GridOperation.h"
 #import <Sparkle/SUUpdater.h>
+#import <ApplicationServices/ApplicationServices.h>
 
 @implementation SlateAppDelegate
 
@@ -509,20 +510,18 @@ OSStatus OnModifiersChangedEvent(EventHandlerCallRef nextHandler, EventRef theEv
   }
 
   // Check if Accessibility API is enabled
-  if (!AXAPIEnabled()) {
-    NSAlert *alert = [SlateConfig warningAlertWithKeyEquivalents: [NSArray arrayWithObjects:@"Enable", @"Quit", nil]];
-    [alert setMessageText:[NSString stringWithFormat:@"Slate cannot run without \"Access for assistive devices\". Would you like to enable it?"]];
-    [alert setInformativeText:[NSString stringWithFormat:@"You may be prompted for your administrator password."]];
-    [alert setAlertStyle:NSCriticalAlertStyle];
-    NSInteger alertIndex = [alert runModal];
-    if (alertIndex == NSAlertFirstButtonReturn) {
-      SlateLogger(@"User wants to enable Access for assistive devices");
-      NSDictionary* errorDictionary;
-      NSAppleScript* applescript = [[NSAppleScript alloc] initWithSource:@"tell application \"System Events\" to set UI elements enabled to true"];
-      [applescript executeAndReturnError:&errorDictionary];
-    }
-    else if (alertIndex == NSAlertSecondButtonReturn) {
-      SlateLogger(@"User selected quit");
+  // Show system permission prompt if not trusted
+  NSDictionary *options = @{(__bridge id)kAXTrustedCheckOptionPrompt: @YES};
+  if (!AXIsProcessTrusted()) {
+    SlateLogger(@"Accessibility access not granted, showing prompt");
+    // AXIsProcessTrusted with kAXTrustedCheckOptionPrompt will show the system permission dialog
+    // Re-check after the system dialog
+    if (!AXIsProcessTrusted()) {
+      NSAlert *alert = [[NSAlert alloc] init];
+      [alert setMessageText:@"Slate 需要辅助功能权限"];
+      [alert setInformativeText:@"请前往「系统设置 → 隐私与安全性 → 辅助功能」\n找到 Slate 并勾选，然后重新启动 Slate。"];
+      [alert addButtonWithTitle:@"退出"];
+      [alert runModal];
       [NSApp terminate:nil];
     }
   }
